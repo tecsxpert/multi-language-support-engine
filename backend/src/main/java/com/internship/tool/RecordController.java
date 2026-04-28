@@ -1,6 +1,8 @@
 package com.internship.tool;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -20,65 +23,144 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin
 public class RecordController {
 
-    private List<Map<String, String>> list = new ArrayList<>();
+    private List<Map<String, Object>> list = new ArrayList<>();
+    private int idCounter = 1;
 
-    // GET
+    // =========================
+    // GET ALL
+    // =========================
     @GetMapping
-    public List<Map<String, String>> getRecords() {
+    public List<Map<String, Object>> getRecords() {
+
         if (list.isEmpty()) {
-            Map<String, String> data = new HashMap<>();
+            Map<String, Object> data = new HashMap<>();
+            data.put("id", idCounter++);
             data.put("title", "Hello World");
             data.put("language", "English");
             list.add(data);
         }
+
         return list;
     }
 
-    // POST
+    // =========================
+    // ADD
+    // =========================
     @PostMapping
-    public Map<String, String> addRecord(@RequestBody Map<String, String> newData) {
+    public Map<String, Object> addRecord(@RequestBody Map<String, Object> newData) {
+
+        newData.put("id", idCounter++);
         list.add(newData);
+
         return newData;
     }
 
+    // =========================
     // DELETE
-    @DeleteMapping("/{index}")
-    public String deleteRecord(@PathVariable int index) {
-        if (index >= 0 && index < list.size()) {
-            list.remove(index);
-            return "Deleted";
-        }
-        return "Invalid index";
+    // =========================
+    @DeleteMapping("/{id}")
+    public String deleteRecord(@PathVariable int id) {
+
+        list.removeIf(item -> (int) item.get("id") == id);
+        return "Deleted";
     }
 
+    // =========================
     // UPDATE
-    @PutMapping("/{index}")
-    public Map<String, String> updateRecord(
-            @PathVariable int index,
-            @RequestBody Map<String, String> updatedData) {
+    // =========================
+    @PutMapping("/{id}")
+    public Map<String, Object> updateRecord(
+            @PathVariable int id,
+            @RequestBody Map<String, Object> updatedData) {
 
-        if (index >= 0 && index < list.size()) {
-            list.set(index, updatedData);
-            return updatedData;
+        for (Map<String, Object> item : list) {
+            if ((int) item.get("id") == id) {
+                item.put("title", updatedData.get("title"));
+                item.put("language", updatedData.get("language"));
+                return item;
+            }
         }
-        return null;
+        return Collections.emptyMap();
     }
+
+    // =========================
+    // STATS
+    // =========================
     @GetMapping("/stats")
-public Map<String, Integer> getStats() {
+    public Map<String, Integer> getStats() {
 
-    int total = list.size();
-    int english = 0;
+        int total = list.size();
+        int english = 0;
 
-    for (Map<String, String> item : list) {
-        if ("english".equalsIgnoreCase(item.get("language"))) {
-            english++;
+        for (Map<String, Object> item : list) {
+            String lang = (String) item.get("language");
+
+            if (lang != null && lang.equalsIgnoreCase("english")) {
+                english++;
+            }
         }
+
+        Map<String, Integer> stats = new HashMap<>();
+        stats.put("total", total);
+        stats.put("english", english);
+
+        return stats;
     }
 
-    Map<String, Integer> stats = new HashMap<>();
-    stats.put("total", total);
-    stats.put("english", english);
+    // =========================
+    // SEARCH
+    // =========================
+    @GetMapping("/search")
+    public List<Map<String, Object>> searchRecords(@RequestParam String q) {
 
-    return stats;
-}
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (Map<String, Object> item : list) {
+            String title = (String) item.get("title");
+
+            if (title != null && title.toLowerCase().contains(q.toLowerCase())) {
+                result.add(item);
+            }
+        }
+
+        return result;
+    }
+
+    // =========================
+    // FILTER
+    // =========================
+    @GetMapping("/filter")
+    public List<Map<String, Object>> filterByLanguage(@RequestParam String lang) {
+
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (Map<String, Object> item : list) {
+            String language = (String) item.get("language");
+
+            if (language != null && language.equalsIgnoreCase(lang)) {
+                result.add(item);
+            }
+        }
+
+        return result;
+    }
+
+    // =========================
+    // 🤖 AI (Day 8)
+    // =========================
+    @PostMapping("/ai/describe")
+    public Map<String, Object> generateAI(@RequestBody Map<String, String> input) {
+
+        String title = input.get("title");
+        String language = input.get("language");
+
+        Map<String, Object> response = new HashMap<>();
+       response.put("description",
+    "This content titled '" + title + "' is written in " +
+    language.substring(0,1).toUpperCase() + language.substring(1).toLowerCase() +
+    ". It is processed using AI to enhance multilingual understanding.");
+        response.put("generated_at", LocalDateTime.now());
+
+        return response;
+    }
 }

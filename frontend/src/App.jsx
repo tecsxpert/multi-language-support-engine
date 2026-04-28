@@ -3,28 +3,34 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import "./index.css";
 
 function App() {
+
   const [data, setData] = useState([]);
   const [stats, setStats] = useState({ total: 0, english: 0 });
 
   const [title, setTitle] = useState("");
   const [language, setLanguage] = useState("");
-  const [editIndex, setEditIndex] = useState(null);
+  const [editId, setEditId] = useState(null);
 
   const [search, setSearch] = useState("");
 
+  const [aiResponse, setAiResponse] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const API = "http://localhost:8080/api/records";
+
   // ======================
-  // FETCH DATA
+  // FETCH
   // ======================
   const fetchData = () => {
-    fetch("http://localhost:8080/api/records")
+    fetch(API)
       .then(res => res.json())
-      .then(data => setData(data));
+      .then(setData);
   };
 
   const fetchStats = () => {
-    fetch("http://localhost:8080/api/records/stats")
+    fetch(`${API}/stats`)
       .then(res => res.json())
-      .then(data => setStats(data));
+      .then(setStats);
   };
 
   useEffect(() => {
@@ -33,17 +39,19 @@ function App() {
   }, []);
 
   // ======================
-  // ⭐ DEBOUNCE SEARCH
+  // SEARCH (Debounce)
   // ======================
   useEffect(() => {
     const delay = setTimeout(() => {
-      if (search) {
-        fetch(`http://localhost:8080/api/records/search?q=${search}`)
-          .then(res => res.json())
-          .then(data => setData(data));
-      } else {
+      if (search.trim().length < 2) {
         fetchData();
+        return;
       }
+
+      fetch(`${API}/search?q=${search}`)
+        .then(res => res.json())
+        .then(setData);
+
     }, 500);
 
     return () => clearTimeout(delay);
@@ -53,7 +61,7 @@ function App() {
   // CRUD
   // ======================
   const handleAdd = () => {
-    fetch("http://localhost:8080/api/records", {
+    fetch(API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, language })
@@ -62,36 +70,69 @@ function App() {
       fetchStats();
       setTitle("");
       setLanguage("");
+      setAiResponse(null);   // ✅ clear AI
     });
   };
 
-  const handleDelete = (index) => {
-    fetch(`http://localhost:8080/api/records/${index}`, {
-      method: "DELETE"
-    }).then(() => {
-      fetchData();
-      fetchStats();
-    });
+  const handleDelete = (id) => {
+    fetch(`${API}/${id}`, { method: "DELETE" })
+      .then(() => {
+        fetchData();
+        fetchStats();
+        setAiResponse(null); // optional cleanup
+      });
   };
 
-  const handleEdit = (index, item) => {
-    setEditIndex(index);
+  const handleEdit = (item) => {
+    setEditId(item.id);
     setTitle(item.title);
     setLanguage(item.language);
+    setAiResponse(null); // clear AI on edit
   };
 
   const handleUpdate = () => {
-    fetch(`http://localhost:8080/api/records/${editIndex}`, {
+    fetch(`${API}/${editId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, language })
     }).then(() => {
-      setEditIndex(null);
+      setEditId(null);
       setTitle("");
       setLanguage("");
       fetchData();
       fetchStats();
+      setAiResponse(null);   // ✅ clear AI
     });
+  };
+
+  // ======================
+  // 🤖 AI
+  // ======================
+  const handleAI = async () => {
+    setLoading(true);
+    setAiResponse(null);
+
+    try {
+      const res = await fetch(`${API}/ai/describe`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          title,
+          language
+        })
+      });
+
+      const data = await res.json();
+      setAiResponse(data);
+
+    } catch (err) {
+      console.error("AI ERROR:", err);
+      alert("AI failed ❌");
+    }
+
+    setLoading(false);
   };
 
   const chartData = [
@@ -101,54 +142,47 @@ function App() {
 
   return (
     <div className="container">
-      <h1>Multi-Language Support Engine</h1>
-      <h2>Day 7 — Search & Filter 🚀</h2>
 
-      {/* KPI CARDS */}
+      <h1>Multi-Language Support Engine</h1>
+      <h2>Day 8 — AI Panel 🚀</h2>
+
+      {/* KPI */}
       <div className="cards">
         <div className="card">
           <h3>Total</h3>
           <p>{stats.total}</p>
         </div>
-
         <div className="card">
           <h3>English</h3>
           <p>{stats.english}</p>
         </div>
       </div>
 
-      {/* CHART */}
-      <div className="chart">
-        <BarChart width={400} height={300} data={chartData}>
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Bar dataKey="value" fill="#4F46E5" />
-        </BarChart>
-      </div>
+      {/* Chart */}
+      <BarChart width={400} height={300} data={chartData}>
+        <XAxis dataKey="name" />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="value" fill="#4F46E5" />
+      </BarChart>
 
-      {/* ⭐ SEARCH */}
+      {/* SEARCH */}
       <input
-        placeholder="Search title..."
+        placeholder="Search..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      <br /><br />
-
-      {/* ⭐ FILTER */}
-      <select
-        onChange={(e) => {
-          const lang = e.target.value;
-          if (!lang) {
-            fetchData();
-          } else {
-            fetch(`http://localhost:8080/api/records/filter?lang=${lang}`)
-              .then(res => res.json())
-              .then(data => setData(data));
-          }
-        }}
-      >
+      {/* FILTER */}
+      <select onChange={(e) => {
+        const lang = e.target.value;
+        if (!lang) fetchData();
+        else {
+          fetch(`${API}/filter?lang=${lang}`)
+            .then(res => res.json())
+            .then(setData);
+        }
+      }}>
         <option value="">All</option>
         <option value="English">English</option>
         <option value="Spanish">Spanish</option>
@@ -157,35 +191,57 @@ function App() {
       {/* FORM */}
       <div className="form">
         <input
-          placeholder="Enter Title"
+          placeholder="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-
         <input
-          placeholder="Enter Language"
+          placeholder="Language"
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
         />
 
-        <button onClick={editIndex !== null ? handleUpdate : handleAdd}>
-          {editIndex !== null ? "Update Record" : "Add Record"}
+        <button onClick={editId ? handleUpdate : handleAdd}>
+          {editId ? "Update" : "Add"}
+        </button>
+
+        {/* ✅ Disabled AI Button */}
+        <button
+          onClick={handleAI}
+          disabled={!title || !language || loading}
+        >
+          {loading ? "Generating..." : "Generate AI"}
         </button>
       </div>
+
+      {/* AI PANEL */}
+      {loading && <p>⏳ Generating AI...</p>}
+
+      {aiResponse && (
+        <div className="card">
+          <h3>AI Output</h3>
+          <p>{aiResponse.description}</p>
+          <small>{aiResponse.generated_at}</small>
+        </div>
+      )}
 
       <hr />
 
       {/* LIST */}
-      <div className="list">
-        {data.map((item, index) => (
-          <div className="list-item" key={index}>
-            <p>{item.title} - {item.language}</p>
+      {data.map(item => (
+        <div key={item.id} className="list-item">
+          <p>
+            {item.title} - {
+              item.language?.charAt(0).toUpperCase() +
+              item.language?.slice(1)
+            }
+          </p>
 
-            <button onClick={() => handleEdit(index, item)}>Edit</button>
-            <button onClick={() => handleDelete(index)}>Delete</button>
-          </div>
-        ))}
-      </div>
+          <button onClick={() => handleEdit(item)}>Edit</button>
+          <button onClick={() => handleDelete(item.id)}>Delete</button>
+        </div>
+      ))}
+
     </div>
   );
 }
