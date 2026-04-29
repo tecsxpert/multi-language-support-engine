@@ -3,43 +3,35 @@ package com.internship.tool.service;
 import com.internship.tool.entity.RecordData;
 import com.internship.tool.repository.RecordRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.*;
 
-import java.util.*;
+import java.util.List;
 
 @Service
 public class RecordService {
 
     private final RecordRepository repo;
+    private final AiServiceClient aiService;
 
-    public RecordService(RecordRepository repo) {
+    public RecordService(RecordRepository repo, AiServiceClient aiService) {
         this.repo = repo;
+        this.aiService = aiService;
     }
 
-    public RecordData save(RecordData record) {
+    public RecordData create(RecordData record) {
 
-        // 🔥 Call AI Service
-        RestTemplate restTemplate = new RestTemplate();
-        String url = "http://127.0.0.1:5000/describe";
+        // ✅ Step 1: Save initial record (without result)
+        record.setResult("Processing...");
+        RecordData saved = repo.save(record);
 
-        Map<String, String> request = new HashMap<>();
-        request.put("text", record.getInputText());
+        // ✅ Step 2: Call AI asynchronously
+        aiService.getAiResponse(record.getInputText())
+                .thenAccept(result -> {
+                    saved.setResult(result != null ? result : "No result");
+                    repo.save(saved);  // update with AI result
+                });
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<Map<String, String>> entity = new HttpEntity<>(request, headers);
-
-        ResponseEntity<Map> response =
-                restTemplate.postForEntity(url, entity, Map.class);
-
-        String aiResult = (String) response.getBody().get("result");
-
-        // set AI result
-        record.setResult(aiResult);
-
-        return repo.save(record);
+        // ✅ Return immediately (non-blocking)
+        return saved;
     }
 
     public List<RecordData> getAll() {

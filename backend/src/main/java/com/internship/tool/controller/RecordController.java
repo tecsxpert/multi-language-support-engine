@@ -12,17 +12,18 @@ public class RecordController {
 
     private final RecordService service;
 
+    // ✅ Constructor Injection
     public RecordController(RecordService service) {
         this.service = service;
     }
 
-    // 🔥 CREATE (AI will generate result)
+    // ✅ CREATE API
     @PostMapping("/create")
     public RecordData create(@RequestBody RecordData record) {
-        return service.save(record);
+        return service.create(record);
     }
 
-    // GET ALL
+    // ✅ GET ALL API
     @GetMapping("/all")
     public List<RecordData> getAll() {
         return service.getAll();

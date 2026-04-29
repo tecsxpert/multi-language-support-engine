@@ -1,7 +1,7 @@
 POST http://localhost:8080/api/create
+
 Content-Type: application/json
 
 {
-  "inputText": "Hello",
-  "result": "Hi"
+  "inputText": "Hello AI"
 }
