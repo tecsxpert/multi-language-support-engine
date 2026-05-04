@@ -1,10 +1,12 @@
 from flask import Flask
 from routes.ai_routes import ai_bp   # import your routes
+from routes.chat_route import chat_bp
 
 app = Flask(__name__)
 
 # ✅ Register Blueprint (VERY IMPORTANT)
 app.register_blueprint(ai_bp)
+app.register_blueprint(chat_bp)
 
 # ✅ Optional: Home route (for testing server)
 @app.route("/")
