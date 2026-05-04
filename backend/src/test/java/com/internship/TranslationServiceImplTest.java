@@ -46,7 +46,6 @@ class TranslationServiceImplTest {
         translation.setStatus("COMPLETED");
     }
 
-    // Test 1 — create success
     @Test
     void testCreateTranslation_Success() {
         when(translationRepository.save(any(Translation.class)))
@@ -57,7 +56,6 @@ class TranslationServiceImplTest {
         verify(translationRepository, times(1)).save(any(Translation.class));
     }
 
-    // Test 2 — create with empty source text throws ValidationException
     @Test
     void testCreateTranslation_EmptySourceText_ThrowsValidationException() {
         translation.setSourceText("");
@@ -65,7 +63,13 @@ class TranslationServiceImplTest {
             () -> translationService.create(translation));
     }
 
-    // Test 3 — create with empty translated text throws ValidationException
+    @Test
+    void testCreateTranslation_NullSourceText_ThrowsValidationException() {
+        translation.setSourceText(null);
+        assertThrows(ValidationException.class,
+            () -> translationService.create(translation));
+    }
+
     @Test
     void testCreateTranslation_EmptyTranslatedText_ThrowsValidationException() {
         translation.setTranslatedText("");
@@ -73,7 +77,27 @@ class TranslationServiceImplTest {
             () -> translationService.create(translation));
     }
 
-    // Test 4 — create with same source and target language throws DuplicateResourceException
+    @Test
+    void testCreateTranslation_NullTranslatedText_ThrowsValidationException() {
+        translation.setTranslatedText(null);
+        assertThrows(ValidationException.class,
+            () -> translationService.create(translation));
+    }
+
+    @Test
+    void testCreateTranslation_EmptySourceLanguage_ThrowsValidationException() {
+        translation.setSourceLanguage("");
+        assertThrows(ValidationException.class,
+            () -> translationService.create(translation));
+    }
+
+    @Test
+    void testCreateTranslation_EmptyTargetLanguage_ThrowsValidationException() {
+        translation.setTargetLanguage("");
+        assertThrows(ValidationException.class,
+            () -> translationService.create(translation));
+    }
+
     @Test
     void testCreateTranslation_SameLanguage_ThrowsDuplicateResourceException() {
         translation.setTargetLanguage("en");
@@ -81,7 +105,6 @@ class TranslationServiceImplTest {
             () -> translationService.create(translation));
     }
 
-    // Test 5 — getById success
     @Test
     void testGetById_Success() {
         when(translationRepository.findById(1L))
@@ -91,7 +114,6 @@ class TranslationServiceImplTest {
         assertEquals(1L, result.getId());
     }
 
-    // Test 6 — getById not found throws ResourceNotFoundException
     @Test
     void testGetById_NotFound_ThrowsResourceNotFoundException() {
         when(translationRepository.findById(99L))
@@ -100,7 +122,6 @@ class TranslationServiceImplTest {
             () -> translationService.getById(99L));
     }
 
-    // Test 7 — getAll returns page
     @Test
     void testGetAll_ReturnsPage() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -111,7 +132,6 @@ class TranslationServiceImplTest {
         assertEquals(1, result.getTotalElements());
     }
 
-    // Test 8 — delete success
     @Test
     void testDelete_Success() {
         when(translationRepository.findById(1L))
@@ -121,14 +141,37 @@ class TranslationServiceImplTest {
         verify(translationRepository, times(1)).delete(translation);
     }
 
-    // Test 9 — search with empty keyword throws ValidationException
+    @Test
+    void testDelete_NotFound_ThrowsResourceNotFoundException() {
+        when(translationRepository.findById(99L))
+            .thenReturn(Optional.empty());
+        assertThrows(ResourceNotFoundException.class,
+            () -> translationService.delete(99L));
+    }
+
     @Test
     void testSearch_EmptyKeyword_ThrowsValidationException() {
         assertThrows(ValidationException.class,
             () -> translationService.search("", PageRequest.of(0, 10)));
     }
 
-    // Test 10 — update success
+    @Test
+    void testSearch_NullKeyword_ThrowsValidationException() {
+        assertThrows(ValidationException.class,
+            () -> translationService.search(null, PageRequest.of(0, 10)));
+    }
+
+    @Test
+    void testSearch_Success() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Translation> page = new PageImpl<>(List.of(translation));
+        when(translationRepository.searchByKeyword("Hello", pageable))
+            .thenReturn(page);
+        Page<Translation> result = translationService.search("Hello", pageable);
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+    }
+
     @Test
     void testUpdate_Success() {
         when(translationRepository.findById(1L))
@@ -144,5 +187,46 @@ class TranslationServiceImplTest {
         Translation result = translationService.update(1L, updated);
         assertNotNull(result);
         verify(translationRepository, times(1)).save(any(Translation.class));
+    }
+
+    @Test
+    void testGetBySourceLanguage_Success() {
+        when(translationRepository.findBySourceLanguage("en"))
+            .thenReturn(List.of(translation));
+        List<Translation> result = translationService.getBySourceLanguage("en");
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testGetBySourceLanguage_Empty_ThrowsValidationException() {
+        assertThrows(ValidationException.class,
+            () -> translationService.getBySourceLanguage(""));
+    }
+
+    @Test
+    void testGetByTargetLanguage_Success() {
+        when(translationRepository.findByTargetLanguage("es"))
+            .thenReturn(List.of(translation));
+        List<Translation> result = translationService.getByTargetLanguage("es");
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testGetByStatus_Success() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Translation> page = new PageImpl<>(List.of(translation));
+        when(translationRepository.findByStatus("COMPLETED", pageable))
+            .thenReturn(page);
+        Page<Translation> result = translationService.getByStatus("COMPLETED", pageable);
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    void testGetByStatus_Empty_ThrowsValidationException() {
+        assertThrows(ValidationException.class,
+            () -> translationService.getByStatus("", PageRequest.of(0, 10)));
     }
 }
