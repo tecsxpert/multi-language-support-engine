@@ -1,3 +1,4 @@
+-- Users table
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -7,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- Translations table
 CREATE TABLE IF NOT EXISTS translations (
     id BIGSERIAL PRIMARY KEY,
     source_text TEXT NOT NULL,
@@ -18,6 +20,19 @@ CREATE TABLE IF NOT EXISTS translations (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- Records table (teammate feature)
+CREATE TABLE IF NOT EXISTS records (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    language VARCHAR(50) NOT NULL,
+    translated_text TEXT,
+    status VARCHAR(50) DEFAULT 'NEW',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for translations
 CREATE INDEX IF NOT EXISTS idx_translations_source_language
     ON translations(source_language);
 
@@ -27,5 +42,13 @@ CREATE INDEX IF NOT EXISTS idx_translations_target_language
 CREATE INDEX IF NOT EXISTS idx_translations_status
     ON translations(status);
 
+-- Index for users
 CREATE INDEX IF NOT EXISTS idx_users_email
     ON users(email);
+
+-- Indexes for records
+CREATE INDEX IF NOT EXISTS idx_language
+    ON records(language);
+
+CREATE INDEX IF NOT EXISTS idx_status
+    ON records(status);
