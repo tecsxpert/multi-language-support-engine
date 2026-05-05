@@ -1,26 +1,18 @@
 package com.internship.tool.entity;
 
-import jakarta.persistence.*;
-
-@Entity
-@Table(name = "record")
 public class RecordData {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String text;
+    private String language;
 
-    private String inputText;
-    private String result;
-
-    public RecordData() {}
-
+    // getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public String getInputText() { return inputText; }
-    public void setInputText(String inputText) { this.inputText = inputText; }
+    public String getText() { return text; }
+    public void setText(String text) { this.text = text; }
 
-    public String getResult() { return result; }
-    public void setResult(String result) { this.result = result; }
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
 }
