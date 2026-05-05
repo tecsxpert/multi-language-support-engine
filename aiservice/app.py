@@ -1,19 +1,24 @@
 from flask import Flask
-from routes.ai_routes import ai_bp   # import your routes
+from routes.describe import describe_bp
+from routes.recommend import recommend_bp
+from routes.report import report_bp
 
 app = Flask(__name__)
 
-# ✅ Register Blueprint (VERY IMPORTANT)
-app.register_blueprint(ai_bp)
+app.register_blueprint(describe_bp, url_prefix="/ai")
+app.register_blueprint(recommend_bp, url_prefix="/ai")
+app.register_blueprint(report_bp, url_prefix="/ai")
 
-# ✅ Optional: Home route (for testing server)
+
 @app.route("/")
 def home():
-    return {"message": "AI Service is running"}
+    return {"message": "AI Service Running"}
 
-# ✅ Debug: Print all routes (helps avoid 404 issues)
-print("Available routes:")
-print(app.url_map)
+
+@app.route("/health")
+def health():
+    return {"status": "UP"}
+
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(debug=True)

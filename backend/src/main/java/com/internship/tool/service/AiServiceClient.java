@@ -1,57 +1,34 @@
 package com.internship.tool.service;
 
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.*;
 
-@Service
+@Component
 public class AiServiceClient {
 
-    private final ExecutorService executor = Executors.newFixedThreadPool(5);
+    private final RestTemplate restTemplate;
 
-    // Simulate external AI call (replace with Groq API later)
-    private String callExternalAI(String text, String language) throws Exception {
-        // simulate latency
-        Thread.sleep(500);
-
-        // simulate occasional failure
-        if (text.toLowerCase().contains("fail")) {
-            throw new RuntimeException("AI service failed");
-        }
-
-        return "AI response for: " + text + " in " + language;
+    public AiServiceClient(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
 
-    public CompletableFuture<Map<String, Object>> generate(String text, String language) {
+    public String callGroq(String text, String language) {
 
-        return CompletableFuture.supplyAsync(() -> {
-            Map<String, Object> res = new HashMap<>();
+        String url = "http://localhost:5000/groq"; // your Groq endpoint
 
-            try {
-                // ⏱ enforce timeout (2 seconds target)
-                String aiResponse = CompletableFuture
-                        .supplyAsync(() -> {
-                            try {
-                                return callExternalAI(text, language);
-                            } catch (Exception e) {
-                                throw new CompletionException(e);
-                            }
-                        }, executor)
-                        .orTimeout(2, TimeUnit.SECONDS)
-                        .join();
+        Map<String, String> request = new HashMap<>();
+        request.put("text", text);
+        request.put("language", language);
 
-                res.put("data", aiResponse);
-                res.put("is_fallback", false);
+        Map<?, ?> response = restTemplate.postForObject(url, request, Map.class);
 
-            } catch (Exception e) {
-                // 🔥 fallback
-                res.put("data", "Fallback response for: " + text);
-                res.put("is_fallback", true);
-            }
+        if (response == null || response.get("result") == null) {
+            throw new RuntimeException("Groq response invalid");
+        }
 
-            return res;
-        }, executor);
+        return String.valueOf(response.get("result"));
     }
 }
