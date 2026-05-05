@@ -1,22 +1,28 @@
 package com.internship.tool.controller;
 
-import org.springframework.http.ResponseEntity;
+import com.internship.tool.service.RecordService;
 import org.springframework.web.bind.annotation.*;
 
-import com.internship.tool.service.RecordService;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/records")
+@RequestMapping("/api")
+@CrossOrigin(origins = "*")
 public class RecordController {
 
-    private final RecordService recordService;
+    private final RecordService service;
 
-    public RecordController(RecordService recordService) {
-        this.recordService = recordService;
+    public RecordController(RecordService service) {
+        this.service = service;
     }
 
-    @GetMapping
-    public ResponseEntity<?> getAllRecords() {
-       return ResponseEntity.ok("Records retrieved successfully");
+    @PostMapping("/ai/generate")
+    public Map<String, Object> generateAI(@RequestBody Map<String, String> req)
+            throws Exception {
+
+        return service.generateAI(
+                req.get("text"),
+                req.get("language")
+        );
     }
 }

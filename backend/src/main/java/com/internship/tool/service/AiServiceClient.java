@@ -1,47 +1,57 @@
 package com.internship.tool.service;
 
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.*;
 
-@Component
+@Service
 public class AiServiceClient {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final ExecutorService executor = Executors.newFixedThreadPool(5);
 
-    // 🔹 GET DESCRIPTION
-    @Async
-    public CompletableFuture<String> getDescription(String text) {
-        String url = "http://127.0.0.1:5000/ai/describe";
+    // Simulate external AI call (replace with Groq API later)
+    private String callExternalAI(String text, String language) throws Exception {
+        // simulate latency
+        Thread.sleep(500);
 
-        Map<String, String> request = new HashMap<>();
-        request.put("text", text);
-
-        try {
-            Map response = restTemplate.postForObject(url, request, Map.class);
-            return CompletableFuture.completedFuture((String) response.get("result"));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return CompletableFuture.completedFuture("AI Service Not Available");
+        // simulate occasional failure
+        if (text.toLowerCase().contains("fail")) {
+            throw new RuntimeException("AI service failed");
         }
+
+        return "AI response for: " + text + " in " + language;
     }
 
-    // 🔹 GET RECOMMENDATIONS
-    @Async
-    public CompletableFuture<List<Map<String, Object>>> getRecommendations(String text) {
-        String url = "http://127.0.0.1:5000/ai/recommend";
+    public CompletableFuture<Map<String, Object>> generate(String text, String language) {
 
-        Map<String, String> request = new HashMap<>();
-         request.put("text", text);
-        try {
-            List response = restTemplate.postForObject(url, request, List.class);
-            return CompletableFuture.completedFuture(response);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return CompletableFuture.completedFuture(new ArrayList<>());
-        }
+        return CompletableFuture.supplyAsync(() -> {
+            Map<String, Object> res = new HashMap<>();
+
+            try {
+                // ⏱ enforce timeout (2 seconds target)
+                String aiResponse = CompletableFuture
+                        .supplyAsync(() -> {
+                            try {
+                                return callExternalAI(text, language);
+                            } catch (Exception e) {
+                                throw new CompletionException(e);
+                            }
+                        }, executor)
+                        .orTimeout(2, TimeUnit.SECONDS)
+                        .join();
+
+                res.put("data", aiResponse);
+                res.put("is_fallback", false);
+
+            } catch (Exception e) {
+                // 🔥 fallback
+                res.put("data", "Fallback response for: " + text);
+                res.put("is_fallback", true);
+            }
+
+            return res;
+        }, executor);
     }
 }

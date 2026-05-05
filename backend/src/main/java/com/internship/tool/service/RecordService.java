@@ -1,12 +1,22 @@
 package com.internship.tool.service;
 
 import org.springframework.stereotype.Service;
-import java.util.List;
+
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 @Service
 public class RecordService {
 
-    public List<String> getAllRecords() {
-        return List.of("Sample Record");
+    private final AiServiceClient aiClient;
+
+    public RecordService(AiServiceClient aiClient) {
+        this.aiClient = aiClient;
+    }
+
+    public Map<String, Object> generateAI(String text, String language)
+            throws ExecutionException, InterruptedException {
+
+        return aiClient.generate(text, language).get();
     }
 }
