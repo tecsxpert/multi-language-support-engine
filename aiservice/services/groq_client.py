@@ -4,20 +4,14 @@ import time
 import json
 from groq import Groq
 
-# 🔥 Load .env file
+# Load env
 load_dotenv()
 
-# 🔥 Get API key
 api_key = os.getenv("GROQ_API_KEY")
 
-# 🔍 Debug (remove later)
-print("Loaded API Key:", api_key)
-
-# ❌ Stop if key missing
 if not api_key:
-    raise ValueError("❌ GROQ_API_KEY not found. Check your .env file!")
+    raise ValueError("❌ GROQ_API_KEY not found in .env")
 
-# ✅ Create Groq client
 client = Groq(api_key=api_key)
 
 
@@ -29,7 +23,8 @@ def call_groq(prompt):
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.5,
-            max_tokens=300
+            max_tokens=300,
+            timeout=10   # ✅ added timeout
         )
 
         end_time = time.time()
@@ -37,7 +32,7 @@ def call_groq(prompt):
 
         content = response.choices[0].message.content
 
-        # Try parsing JSON
+        # Try JSON parse
         try:
             parsed = json.loads(content)
         except:
