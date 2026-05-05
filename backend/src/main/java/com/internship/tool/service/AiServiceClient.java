@@ -35,8 +35,7 @@ public class AiServiceClient {
         String url = "http://127.0.0.1:5000/ai/recommend";
 
         Map<String, String> request = new HashMap<>();
-        request.put("text", text);
-
+         request.put("text", text);
         try {
             List response = restTemplate.postForObject(url, request, List.class);
             return CompletableFuture.completedFuture(response);
