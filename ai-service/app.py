@@ -1,17 +1,26 @@
 from flask import Flask
-from routes.ai_routes import ai_bp   # import your routes
+from routes.ai_routes import ai_bp
+from routes.chat_route import chat_bp   
+
+#import limiter
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
 
-# ✅ Register Blueprint (VERY IMPORTANT)
-app.register_blueprint(ai_bp)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["30 per minute"]
+)
 
-# ✅ Optional: Home route (for testing server)
+app.register_blueprint(ai_bp)
+app.register_blueprint(chat_bp)   
+
 @app.route("/")
 def home():
     return {"message": "AI Service is running"}
 
-# ✅ Debug: Print all routes (helps avoid 404 issues)
 print("Available routes:")
 print(app.url_map)
 
