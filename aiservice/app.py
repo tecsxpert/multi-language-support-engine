@@ -3,25 +3,45 @@ from routes.describe import describe_bp
 from routes.recommend import recommend_bp
 from routes.report import report_bp
 
+# 🔥 ChromaDB loader
+from services.chroma_service import load_knowledge
+
 app = Flask(__name__)
 
-# Register routes
+# ✅ Register routes
 app.register_blueprint(describe_bp, url_prefix="/ai")
 app.register_blueprint(recommend_bp, url_prefix="/ai")
 app.register_blueprint(report_bp, url_prefix="/ai")
 
 
-# ✅ Preload model (Flask 3 fix)
+# ✅ Preload model
 def preload_model():
     print("✅ AI Model Ready (Preloaded)")
 
-preload_model()   # 🔥 Call manually
+
+preload_model()
+
+# ✅ Load Chroma knowledge
+load_knowledge()
+
+
+# ✅ Home route
+@app.route("/")
+def home():
+    return {
+        "message": "AI Service Running",
+        "version": "Day 13 Docker Enabled"
+    }
 
 
 # ✅ Health check
 @app.route("/health")
 def health():
-    return {"status": "UP"}
+    return {
+        "status": "UP",
+        "service": "AI Service",
+        "docker": "running"
+    }
 
 
 # ✅ Security headers
@@ -33,5 +53,6 @@ def add_security_headers(response):
     return response
 
 
+# ✅ Run Flask app for Docker
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
