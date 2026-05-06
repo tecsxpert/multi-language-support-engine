@@ -1,59 +1,48 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
+from services.groq_client import call_groq   # ✅ IMPORTANT
 
-# ✅ Blueprint with prefix
 ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
 
 
 # =========================
-# DAY 3 - DESCRIBE API
+# DESCRIBE API
 # =========================
 @ai_bp.route("/describe", methods=["POST"])
 def describe():
     data = request.get_json()
 
-    if not data or "text" not in data:
-        return jsonify({"error": "text required"}), 400
+    # ✅ match test input
+    if not data or "input" not in data:
+        return jsonify({"error": "input required"}), 400
 
-    text = data["text"]
+    text = data["input"]
+
+    # ✅ MUST call groq (tests mock this)
+    result = call_groq(text)
 
     return jsonify({
-        "generated_at": "now",
-        "result": f"Generated Description: {text}"
+        "generated_at": datetime.now().isoformat(),
+        "result": result   # ✅ tests expect "result"
     })
 
 
 # =========================
-# DAY 4 - RECOMMEND API
+# RECOMMEND API
 # =========================
 @ai_bp.route("/recommend", methods=["POST"])
 def recommend():
     data = request.get_json()
 
-    if not data or "text" not in data:
-        return jsonify({"error": "text required"}), 400
+    if not data or "input" not in data:
+        return jsonify({"error": "input required"}), 400
 
-    text = data["text"]
+    text = data["input"]
 
-    recommendations = [
-        {
-            "action_type": "Improve",
-            "description": f"Improve clarity of: {text}",
-            "priority": 1
-        },
-        {
-            "action_type": "Expand",
-            "description": f"Add more details to: {text}",
-            "priority": 2
-        },
-        {
-            "action_type": "Summarize",
-            "description": f"Summarize the content: {text}",
-            "priority": 3
-        }
-    ]
+    # ✅ call groq
+    result = call_groq(text)
 
     return jsonify({
         "generated_at": datetime.now().isoformat(),
-        "recommendations": recommendations
+        "result": result   # ✅ IMPORTANT: use "result" not "recommendations"
     })
