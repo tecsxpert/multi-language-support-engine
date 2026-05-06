@@ -1,3 +1,6 @@
 flask
 groq
 python_dotenv
+bleach
+flask-limiter
+jwt
