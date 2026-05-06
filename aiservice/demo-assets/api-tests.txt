@@ -1,0 +1,31 @@
+POST http://127.0.0.1:5000/ai/describe
+Content-Type: application/json
+
+{
+  "input": "AI in healthcare"
+}
+
+
+###
+
+POST http://127.0.0.1:5000/ai/recommend
+Content-Type: application/json
+
+{
+  "input": "Improve student productivity"
+}
+
+
+###
+
+POST http://127.0.0.1:5000/ai/generate-report
+Content-Type: application/json
+
+{
+  "input": "E-commerce analytics"
+}
+
+
+###
+
+GET http://127.0.0.1:5000/health
