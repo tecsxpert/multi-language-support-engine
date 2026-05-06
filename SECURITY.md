@@ -73,12 +73,52 @@ Residual Risks
 
 - Name: Anusha Chandrahas Raykar
 - Role: AI Developer 2
-- Date: ________6/05/2026__
+- Date: 29/04/2026
 
 ---
 
 Final Status
 
-✔️ Security improvements implemented
-✔️ Common risks addressed
-✔️ Ready for submission
+ Security improvements implemented
+ Common risks addressed
+ Ready for submission
+
+ ---
+
+Final Security Checklist
+
+ Input sanitization implemented using bleach
+ Rate limiting configured using flask-limiter
+ API keys stored securely using environment variables
+ Request validation added for all endpoints
+ Error handling prevents sensitive data exposure
+ No hardcoded secrets in code
+
+---
+
+ Team Sign-off
+
+We confirm that the security review is completed and the project meets basic security standards.
+
+1. Name: Neha S P 
+   Role: AI Developer 1
+
+2. Name: Anusha Chandrahas Raykar
+   Role: AI Developer 2
+
+3. Name: Naveen Kumar R
+   Role: Java Developer1
+
+4. Name: Bhoomika N
+   Role: Java Developer2
+
+5. Name: Mohammed Yahya
+   Role: Security Reviewer
+
+---
+
+ Final Status
+
+ Security checklist completed
+ Team sign-off added
+ Ready for submission
