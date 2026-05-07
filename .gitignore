@@ -3,3 +3,10 @@ target/
 node_modules/
 __pycache__/
 chroma_data/
+*.class
+*.jar
+*.war
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
