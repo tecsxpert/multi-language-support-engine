@@ -7,7 +7,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +24,6 @@ public class TranslationController {
 
     private final TranslationService translationService;
 
-    // GET /all — paginated, any authenticated user
     @GetMapping("/all")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<Translation>> getAll(Pageable pageable) {
@@ -30,7 +31,6 @@ public class TranslationController {
         return ResponseEntity.ok(translationService.getAll(pageable));
     }
 
-    // GET /{id} — any authenticated user
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Translation> getById(@PathVariable Long id) {
@@ -38,7 +38,6 @@ public class TranslationController {
         return ResponseEntity.ok(translationService.getById(id));
     }
 
-    // POST /create — only ADMIN
     @PostMapping("/create")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Translation> create(
@@ -48,7 +47,6 @@ public class TranslationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    // PUT /{id} — only ADMIN
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Translation> update(
@@ -58,7 +56,6 @@ public class TranslationController {
         return ResponseEntity.ok(translationService.update(id, translation));
     }
 
-    // DELETE /{id} — only ADMIN
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
@@ -67,7 +64,6 @@ public class TranslationController {
         return ResponseEntity.noContent().build();
     }
 
-    // GET /search — any authenticated user
     @GetMapping("/search")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<Translation>> search(
@@ -75,7 +71,6 @@ public class TranslationController {
         return ResponseEntity.ok(translationService.search(keyword, pageable));
     }
 
-    // GET /status — any authenticated user
     @GetMapping("/status")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<Translation>> getByStatus(
@@ -83,7 +78,6 @@ public class TranslationController {
         return ResponseEntity.ok(translationService.getByStatus(status, pageable));
     }
 
-    // GET /language/source — any authenticated user
     @GetMapping("/language/source")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<Translation>> getBySourceLanguage(
@@ -92,12 +86,49 @@ public class TranslationController {
             translationService.getBySourceLanguage(sourceLanguage));
     }
 
-    // GET /language/target — any authenticated user
     @GetMapping("/language/target")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<Translation>> getByTargetLanguage(
             @RequestParam String targetLanguage) {
         return ResponseEntity.ok(
             translationService.getByTargetLanguage(targetLanguage));
+    }
+
+    @GetMapping("/export")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<byte[]> exportCsv() {
+        log.info("GET /export called");
+        List<Translation> all = translationService.getAll(
+            Pageable.unpaged()).getContent();
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("ID,Source Text,Translated Text,Source Language,Target Language,Status,Created At\n");
+        for (Translation t : all) {
+            csv.append(t.getId()).append(",")
+               .append(escapeCSV(t.getSourceText())).append(",")
+               .append(escapeCSV(t.getTranslatedText())).append(",")
+               .append(t.getSourceLanguage()).append(",")
+               .append(t.getTargetLanguage()).append(",")
+               .append(t.getStatus()).append(",")
+               .append(t.getCreatedAt()).append("\n");
+        }
+
+        byte[] csvBytes = csv.toString().getBytes();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/csv"));
+        headers.setContentDispositionFormData("attachment", "translations.csv");
+        headers.setContentLength(csvBytes.length);
+
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(csvBytes);
+    }
+
+    private String escapeCSV(String value) {
+        if (value == null) return "";
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
     }
 }
