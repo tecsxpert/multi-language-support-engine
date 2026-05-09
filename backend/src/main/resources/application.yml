@@ -17,6 +17,7 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    baseline-on-migrate: true
 
   data:
     redis:
@@ -26,8 +27,8 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:demo@example.com}
+    password: ${MAIL_PASSWORD:demopassword}
     properties:
       mail:
         smtp:
@@ -41,13 +42,24 @@ spring:
     cache: false
 
 jwt:
-  secret: ${JWT_SECRET:default-secret-key-change-in-production}
+  secret: ${JWT_SECRET:default-secret-key-change-in-production-min-32-chars}
 
 server:
   port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
 
 management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.internship.tool: INFO
+    org.springframework.security: WARN
