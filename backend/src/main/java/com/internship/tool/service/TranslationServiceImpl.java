@@ -21,6 +21,7 @@ import java.util.List;
 public class TranslationServiceImpl implements TranslationService {
 
     private final TranslationRepository translationRepository;
+    private final AuditLogService auditLogService;
 
     @Override
     @CacheEvict(value = "translations", allEntries = true)
@@ -28,7 +29,10 @@ public class TranslationServiceImpl implements TranslationService {
         validateTranslation(translation);
         log.info("Creating translation from {} to {}",
             translation.getSourceLanguage(), translation.getTargetLanguage());
-        return translationRepository.save(translation);
+        Translation saved = translationRepository.save(translation);
+        auditLogService.log("CREATE", "Translation",
+            saved.getId(), "system", "Created: " + saved.getSourceText());
+        return saved;
     }
 
     @Override
@@ -55,7 +59,10 @@ public class TranslationServiceImpl implements TranslationService {
         existing.setSourceLanguage(translation.getSourceLanguage());
         existing.setTargetLanguage(translation.getTargetLanguage());
         existing.setStatus(translation.getStatus());
-        return translationRepository.save(existing);
+        Translation updated = translationRepository.save(existing);
+        auditLogService.log("UPDATE", "Translation",
+            id, "system", "Updated: " + updated.getSourceText());
+        return updated;
     }
 
     @Override
@@ -63,10 +70,13 @@ public class TranslationServiceImpl implements TranslationService {
     public void delete(Long id) {
         Translation existing = getById(id);
         translationRepository.delete(existing);
+        auditLogService.log("DELETE", "Translation",
+            id, "system", "Deleted: " + existing.getSourceText());
     }
 
     @Override
-    @Cacheable(value = "translations", key = "'search_' + #keyword + #pageable.pageNumber")
+    @Cacheable(value = "translations",
+        key = "'search_' + #keyword + #pageable.pageNumber")
     public Page<Translation> search(String keyword, Pageable pageable) {
         if (keyword == null || keyword.trim().isEmpty()) {
             throw new ValidationException("Search keyword cannot be empty");
@@ -93,7 +103,8 @@ public class TranslationServiceImpl implements TranslationService {
     }
 
     @Override
-    @Cacheable(value = "translations", key = "'status_' + #status + #pageable.pageNumber")
+    @Cacheable(value = "translations",
+        key = "'status_' + #status + #pageable.pageNumber")
     public Page<Translation> getByStatus(String status, Pageable pageable) {
         if (status == null || status.trim().isEmpty()) {
             throw new ValidationException("Status cannot be empty");
@@ -118,7 +129,8 @@ public class TranslationServiceImpl implements TranslationService {
             translation.getTargetLanguage().trim().isEmpty()) {
             throw new ValidationException("Target language cannot be empty");
         }
-        if (translation.getSourceLanguage().equals(translation.getTargetLanguage())) {
+        if (translation.getSourceLanguage()
+                .equals(translation.getTargetLanguage())) {
             throw new DuplicateResourceException(
                 "Source and target language cannot be the same");
         }
